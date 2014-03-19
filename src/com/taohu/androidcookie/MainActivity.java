@@ -4,15 +4,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.http.NameValuePair;
-import org.apache.http.cookie.Cookie;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -23,33 +26,60 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 public class MainActivity extends Activity {
 
 	private WebView wv;
 	private String url;
 
+	enum DebugCookie {
+		LoadData, AddHeader, AddJS, CookieManager,
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		//url = "http://www.pivotaltracker.com/";
-		//url = "http://99designs.com/";
+
+		// url = "http://www.pivotaltracker.com/";
+		// url = "http://99designs.com/";
 		wv = (WebView) findViewById(R.id.wv_webtab);
+
 		url = "http://9slides.com/";
-		setCookies2();
-		initWebView(R.id.wv_webtab);
-		String cookie = CookieManager.getInstance().getCookie(url);
-		Log.d("Cookie", url + "   " + cookie);
-//		try {
-//			Thread.sleep(5000);
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-		Map<String, String> map = new HashMap<String, String>();
-		map.put("Set-Cookie", cookie);
-		wv.loadUrl(url, map);
+		DebugCookie type = DebugCookie.AddJS;
+		CookieManager.setAcceptFileSchemeCookies(true);
+
+		if (type == DebugCookie.LoadData) {
+			initWebView(R.id.wv_webtab);
+			Communicator comm = new Communicator();
+			String htmlStr = "";
+			try {
+				htmlStr = comm.httpGet(url);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			wv.loadData(htmlStr, "text/html", "UTF-8");
+		} else if (type == DebugCookie.AddHeader) {
+			initWebView(R.id.wv_webtab);
+			String cookieStr = "domain=.9slides.com;path=/;Expires=Thu, 2 Aug 2021 20:47:11 UTC;forms9slides=9162BD577880CE411E4F875C5A6AD624D1C4399AC821D0FD048D6CA2D152BB8A0C9322E071A9A7EF814CB514657C54151075E8B363010B86E41818CA67F29FEF63C1CFBCCE7AC5A445234974350D532830E1DF6F37B07B43FD5905CBFF7C44633B0D3707F8545731BC31EAC0357F5791A8D563DFFD87DBE29E0BC08C6A340FB2F65DEECB48768D14D89B43BA6FC563DD0D77C955629DCFA407E5DEE2EB5199E17EBB35A353ACDC79D844414F892C4AB1";
+			Map<String, String> header = new HashMap<String, String>();
+			header.put("Cookie", cookieStr);
+			wv.loadUrl(url, header);
+		} else if (type == DebugCookie.AddJS) {
+			initWebView2(R.id.wv_webtab);
+			wv.loadUrl(url);
+		} else if (type == DebugCookie.CookieManager) {
+			setCookies2();
+			String cookie = CookieManager.getInstance().getCookie(url);
+			Log.d("Cookie", url + "   " + cookie);
+			initWebView(R.id.wv_webtab);
+			wv.loadUrl(url);
+		}
+
 	}
 
 	@Override
@@ -76,15 +106,19 @@ public class MainActivity extends Activity {
 		CookieSyncManager.getInstance().sync();
 	}
 
-	private void setCookies2(){
+	private void setCookies2() {
 		// Log.d("Cookie", "enter setCookies()");
 		CookieSyncManager.createInstance(this);
 		CookieManager cookieManager = CookieManager.getInstance();
 		cookieManager.removeAllCookie();
 		cookieManager.setAcceptCookie(true);
-		//String cookieStr = "url=https://www.pivotaltracker.com/;domain=null;name=t_session;path=/;value=BAh7DDoUbGFzdF9sb2dpbl9kYXRlVTogQWN0aXZlU3VwcG9ydDo6VGltZVdpdGhab25lWwhJdToJVGltZQ32iBzAAAAAHgY6H0BtYXJzaGFsX3dpdGhfdXRjX2NvZXJjaW9uVCIfUGFjaWZpYyBUaW1lIChVUyAmIENhbmFkYSlJdTsHDe6IHMAAAAAeBjsIVDoPZXhwaXJlc19hdEl1OwcN1okcgPnRrCgGOwhGOhZza2lwX2Vycm9yX2VzY2FwZVQ6HXZpZXdlZF9kYXNoYm9hcmRfbWVzc2FnZVQ6FXNpZ25pbl9wZXJzb25faWRpA7KJEjoQX2NzcmZfdG9rZW4iMStRY2RLUmovWEFSYkJZbG5kVllYR1VpQTgwMXpSZEdTOXkxa3dlenU0UDg9Og9zZXNzaW9uX2lkIiUyNGE5MjFlOGNmY2ZiNzBjMzhlYzJjNTJlYzFkZmUxZQ%3D%3D--f93c43d2e449fde01cab06b56a3d31180698cb74";
-		//String cookieStr = "url=https://www.pivotaltracker.com/;domain=.pivotaltracker.com;name=t_session;path=/;value=BAh7DDoUbGFzdF9sb2dpbl9kYXRlVTogQWN0aXZlU3VwcG9ydDo6VGltZVdpdGhab25lWwhJdToJVGltZQ32iBzAAAAAHgY6H0BtYXJzaGFsX3dpdGhfdXRjX2NvZXJjaW9uVCIfUGFjaWZpYyBUaW1lIChVUyAmIENhbmFkYSlJdTsHDe6IHMAAAAAeBjsIVDoPZXhwaXJlc19hdEl1OwcN1okcgPnRrCgGOwhGOhZza2lwX2Vycm9yX2VzY2FwZVQ6HXZpZXdlZF9kYXNoYm9hcmRfbWVzc2FnZVQ6FXNpZ25pbl9wZXJzb25faWRpA7KJEjoQX2NzcmZfdG9rZW4iMStRY2RLUmovWEFSYkJZbG5kVllYR1VpQTgwMXpSZEdTOXkxa3dlenU0UDg9Og9zZXNzaW9uX2lkIiUyNGE5MjFlOGNmY2ZiNzBjMzhlYzJjNTJlYzFkZmUxZQ%3D%3D--f93c43d2e449fde01cab06b56a3d31180698cb74";
-		String cookieStr = "domain=.9slides.com;name=forms9slides;path=/;value=827BE93D78F40881746DA7177AB6EF41B64877AAEFE8A678B3D64FC0D75C22A9322700E425B358914E3F8FC2B299733852E5DAF6B6500A81F1DD1FAAC22D02F6A4250F07A213C910680A57DC890062BE878C26E98AD5F8F7746135AEECFF940739248165BC3CE42F6E20FE2C3ADC14BF80264FCDE64B28D50A08B5FFFDE38C2D4B851D097E63BEF17332FEE97B6CFFAA9A9C4E78C144EE9774DD3422E78E009446C2E500B07CF542807B41524CD469DC"; 
+		// String cookieStr =
+		// "url=https://www.pivotaltracker.com/;domain=null;name=t_session;path=/;value=BAh7DDoUbGFzdF9sb2dpbl9kYXRlVTogQWN0aXZlU3VwcG9ydDo6VGltZVdpdGhab25lWwhJdToJVGltZQ32iBzAAAAAHgY6H0BtYXJzaGFsX3dpdGhfdXRjX2NvZXJjaW9uVCIfUGFjaWZpYyBUaW1lIChVUyAmIENhbmFkYSlJdTsHDe6IHMAAAAAeBjsIVDoPZXhwaXJlc19hdEl1OwcN1okcgPnRrCgGOwhGOhZza2lwX2Vycm9yX2VzY2FwZVQ6HXZpZXdlZF9kYXNoYm9hcmRfbWVzc2FnZVQ6FXNpZ25pbl9wZXJzb25faWRpA7KJEjoQX2NzcmZfdG9rZW4iMStRY2RLUmovWEFSYkJZbG5kVllYR1VpQTgwMXpSZEdTOXkxa3dlenU0UDg9Og9zZXNzaW9uX2lkIiUyNGE5MjFlOGNmY2ZiNzBjMzhlYzJjNTJlYzFkZmUxZQ%3D%3D--f93c43d2e449fde01cab06b56a3d31180698cb74";
+		// String cookieStr =
+		// "url=https://www.pivotaltracker.com/;domain=.pivotaltracker.com;name=t_session;path=/;value=BAh7DDoUbGFzdF9sb2dpbl9kYXRlVTogQWN0aXZlU3VwcG9ydDo6VGltZVdpdGhab25lWwhJdToJVGltZQ32iBzAAAAAHgY6H0BtYXJzaGFsX3dpdGhfdXRjX2NvZXJjaW9uVCIfUGFjaWZpYyBUaW1lIChVUyAmIENhbmFkYSlJdTsHDe6IHMAAAAAeBjsIVDoPZXhwaXJlc19hdEl1OwcN1okcgPnRrCgGOwhGOhZza2lwX2Vycm9yX2VzY2FwZVQ6HXZpZXdlZF9kYXNoYm9hcmRfbWVzc2FnZVQ6FXNpZ25pbl9wZXJzb25faWRpA7KJEjoQX2NzcmZfdG9rZW4iMStRY2RLUmovWEFSYkJZbG5kVllYR1VpQTgwMXpSZEdTOXkxa3dlenU0UDg9Og9zZXNzaW9uX2lkIiUyNGE5MjFlOGNmY2ZiNzBjMzhlYzJjNTJlYzFkZmUxZQ%3D%3D--f93c43d2e449fde01cab06b56a3d31180698cb74";
+		// String cookieStr =
+		// "domain=.9slides.com;name=forms9slides;path=/;value=827BE93D78F40881746DA7177AB6EF41B64877AAEFE8A678B3D64FC0D75C22A9322700E425B358914E3F8FC2B299733852E5DAF6B6500A81F1DD1FAAC22D02F6A4250F07A213C910680A57DC890062BE878C26E98AD5F8F7746135AEECFF940739248165BC3CE42F6E20FE2C3ADC14BF80264FCDE64B28D50A08B5FFFDE38C2D4B851D097E63BEF17332FEE97B6CFFAA9A9C4E78C144EE9774DD3422E78E009446C2E500B07CF542807B41524CD469DC";
+		String cookieStr = "forms9slides=9162BD577880CE411E4F875C5A6AD624D1C4399AC821D0FD048D6CA2D152BB8A0C9322E071A9A7EF814CB514657C54151075E8B363010B86E41818CA67F29FEF63C1CFBCCE7AC5A445234974350D532830E1DF6F37B07B43FD5905CBFF7C44633B0D3707F8545731BC31EAC0357F5791A8D563DFFD87DBE29E0BC08C6A340FB2F65DEECB48768D14D89B43BA6FC563DD0D77C955629DCFA407E5DEE2EB5199E17EBB35A353ACDC79D844414F892C4AB1";
 		cookieManager.setCookie(url, cookieStr);
 		CookieSyncManager.getInstance().sync();
 	}
@@ -104,47 +138,93 @@ public class MainActivity extends Activity {
 	}
 
 	public void initWebView(int containerId) {
-		
 		wv.getSettings().setAppCacheEnabled(true);
 		wv.getSettings().setAppCachePath(this.getCacheDir().getAbsolutePath());
 		wv.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
 		wv.getSettings().setJavaScriptEnabled(true);
+		CookieManager.setAcceptFileSchemeCookies(true);
 		wv.setWebViewClient(new WebTabClient());
 		wv.setWebChromeClient(new WebTabChromeClient());
 	}
 
-	public class WebTabClient extends WebViewClient {
+	public void initWebView2(int containerId) {
+		// String[] cookies = new String[]{
+		// "domain=.9slides.com",
+		// "name=forms9slides",
+		// "path=/",
+		// "value=827BE93D78F40881746DA7177AB6EF41B64877AAEFE8A678B3D64FC0D75C22A9322700E425B358914E3F8FC2B299733852E5DAF6B6500A81F1DD1FAAC22D02F6A4250F07A213C910680A57DC890062BE878C26E98AD5F8F7746135AEECFF940739248165BC3CE42F6E20FE2C3ADC14BF80264FCDE64B28D50A08B5FFFDE38C2D4B851D097E63BEF17332FEE97B6CFFAA9A9C4E78C144EE9774DD3422E78E009446C2E500B07CF542807B41524CD469DC",
+		// };
+		// String cookieStr =
+		// "domain=.9slides.com;name=forms9slides;path=/;value=827BE93D78F40881746DA7177AB6EF41B64877AAEFE8A678B3D64FC0D75C22A9322700E425B358914E3F8FC2B299733852E5DAF6B6500A81F1DD1FAAC22D02F6A4250F07A213C910680A57DC890062BE878C26E98AD5F8F7746135AEECFF940739248165BC3CE42F6E20FE2C3ADC14BF80264FCDE64B28D50A08B5FFFDE38C2D4B851D097E63BEF17332FEE97B6CFFAA9A9C4E78C144EE9774DD3422E78E009446C2E500B07CF542807B41524CD469DC";
+		// String cookieStr =
+		// "domain=.9slides.com;name=forms9slides;path=/;value=9162BD577880CE411E4F875C5A6AD624D1C4399AC821D0FD048D6CA2D152BB8A0C9322E071A9A7EF814CB514657C54151075E8B363010B86E41818CA67F29FEF63C1CFBCCE7AC5A445234974350D532830E1DF6F37B07B43FD5905CBFF7C44633B0D3707F8545731BC31EAC0357F5791A8D563DFFD87DBE29E0BC08C6A340FB2F65DEECB48768D14D89B43BA6FC563DD0D77C955629DCFA407E5DEE2EB5199E17EBB35A353ACDC79D844414F892C4AB1";
+		String cookieStr = "forms9slides=9162BD577880CE411E4F875C5A6AD624D1C4399AC821D0FD048D6CA2D152BB8A0C9322E071A9A7EF814CB514657C54151075E8B363010B86E41818CA67F29FEF63C1CFBCCE7AC5A445234974350D532830E1DF6F37B07B43FD5905CBFF7C44633B0D3707F8545731BC31EAC0357F5791A8D563DFFD87DBE29E0BC08C6A340FB2F65DEECB48768D14D89B43BA6FC563DD0D77C955629DCFA407E5DEE2EB5199E17EBB35A353ACDC79D844414F892C4AB1";
+		wv.getSettings().setAppCacheEnabled(true);
+		wv.getSettings().setAppCachePath(this.getCacheDir().getAbsolutePath());
+		wv.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+		wv.getSettings().setJavaScriptEnabled(true);
+		CookieManager.setAcceptFileSchemeCookies(true);
+		wv.setWebViewClient(new WebTabClient2(cookieStr));
+		wv.setWebChromeClient(new WebTabChromeClient());
+	}
+
+	public class WebTabClient2 extends WebViewClient {
+		String cookies;
+
+		public WebTabClient2(String cookies) {
+			this.cookies = cookies;
+		}
 
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
+			view.loadUrl(url);
+			String addCookieJS = "javascript:addCookie(){" + "document.cookie=\"" + cookies + "\"};";
+			Log.d("Cookie", "shouldOverrideUrlLoading()");
+			Log.d("Cookie", addCookieJS);
+			view.loadUrl(addCookieJS);
 			return false;
 		}
 
-		// @Override
-		// public void onLoadResource(WebView view, String url) {
-		// //Log.d("Search", url);
-		// super.onLoadResource(view, url);
-		// }
-		// @Override
-		// public void onPageStarted(WebView view, String url, Bitmap favicon) {
-		// super.onPageStarted(view, url, favicon);
-		// Log.d("Tab", " onPageStarted() ");
-		// if (mOnTabPageStartedListener==null)
-		// throw new
-		// NullPointerException("OnTabPageStartedListener should be initialized");
-		// mOnTabPageStartedListener.onTabPageStarted(view,
-		// Long.parseLong(getTag())-1);
-		// }
-		//
-		// @Override
-		// public void onPageFinished(WebView view, String url) {
-		// super.onPageFinished(view, url);
-		// if (mOnTabPageFinishedListener==null)
-		// throw new
-		// NullPointerException("OnTabPageFinishedListener should be initialized");
-		// mOnTabPageFinishedListener.onTabPageFinished(view,
-		// Long.parseLong(getTag())-1);
-		// }
+		@Override
+		public void onLoadResource(WebView view, String url) {
+			// Log.d("Search", url);
+			super.onLoadResource(view, url);
+		}
+
+		@Override
+		public void onPageStarted(WebView view, String url, Bitmap favicon) {
+			super.onPageStarted(view, url, favicon);
+			String addCookieJS = "javascript:addCookie(){" 
+					+ "var expDate = new Date();"
+					+ "expDate.setDate(expDate.getDate() + 365);"
+					+ "expDate = expDate.toGMTString();"
+					+ "document.cookie=\"" + cookies + "\";path=/;expires=expDate"
+					+ "};";
+
+			
+			Log.d("Cookie", "onPageStarted()");
+			Log.d("Cookie", addCookieJS);
+			view.loadUrl(addCookieJS);
+		}
+
+		@Override
+		public void onPageFinished(WebView view, String url) {
+			super.onPageFinished(view, url);
+//			String addCookieJS = "javascript:addCookie(){" + "document.cookie=\"" + cookies + "\"};";
+			String addCookieJS = "javascript:addCookie(){" 
+					+ "var expDate = new Date();"
+					+ "expDate.setDate(expDate.getDate() + 365);"
+					+ "expDate = expDate.toGMTString();"
+					+ "document.cookie=\"" + cookies + "\";path=/;expires=expDate"
+					+ "};";
+			Log.d("Cookie", "onPageFinished()");
+			Log.d("Cookie", addCookieJS);
+			view.loadUrl(addCookieJS);
+		}
+	}
+
+	public class WebTabClient extends WebViewClient {
+
 	}
 
 	public class WebTabChromeClient extends WebChromeClient {

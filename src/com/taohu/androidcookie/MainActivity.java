@@ -31,6 +31,7 @@ public class MainActivity extends Activity {
 
 	private WebView wv;
 	private String url;
+	private final static String COOKIE = "BF2CB0E24FE45117827E689E0B45092AF05135EAB360115A3C2F5ACC00ADA859F5F93CBBE4D4E95E0B838238CD94063FD4CB717D9DE16086A90816D8F61EA69A8CAA07DFB2F47FB58F9D47BFB45E01AF76F7B9C9BDC63C21677C7EA533F36DBFEAF10DBF36943AD50052FCDAF8A22D234A463CF7CF27AC9DA680F0CD23CAA0C8791868495F5FFF487DC04484C0755A91028BD55ECDF984FE286BD5A40223F67FF399E5690843298B01418C05FB7308B7";
 
 	enum DebugCookie {
 		LoadData, AddHeader, AddJS, CookieManager,
@@ -71,7 +72,10 @@ public class MainActivity extends Activity {
 			wv.loadUrl(url, header);
 		} else if (type == DebugCookie.AddJS) {
 			initWebView2(R.id.wv_webtab);
+//			setCook();
 			wv.loadUrl(url);
+//			removeCook();
+			
 		} else if (type == DebugCookie.CookieManager) {
 			setCookies2();
 			String cookie = CookieManager.getInstance().getCookie(url);
@@ -80,6 +84,46 @@ public class MainActivity extends Activity {
 			wv.loadUrl(url);
 		}
 
+	}
+	
+	private void removeCook(){
+		String cookies = "forms9slides=";
+		String removeCookieJS = "javascript:(function(){" 
+				+ "var expDate = new Date();"
+				+ "expDate.setDate(expDate.getDate() - 365);"
+				+ "expData = expDate.toGMTString();"
+				+ "var cookieStr='" + cookies + ";expires=" + "'" + "+expDate;"
+				+ "document.cookie=cookieStr;"
+				+ "})()";
+		Log.d("Cookie", removeCookieJS);
+		wv.loadUrl(removeCookieJS);
+	}
+	
+	private void setCook(){
+		String cookies = "forms9slides=" + COOKIE;
+		String addCookieJS = "javascript:(function(){ " 
+				+ "var expDate = new Date();"
+				+ "expDate.setDate(expDate.getDate() + 365);"
+				+ "expDate=expDate.toGMTString();"
+				+ "var cookieStr='" + cookies + ";path=/;expires=" + "'" + "+expDate;"
+				+ "document.cookie=cookieStr;"
+				+ "alert(document.cookie)"
+				+ "})()";
+		Log.d("Cookie", addCookieJS);
+		wv.loadUrl(addCookieJS);
+	}
+	
+	private void jsTest(){
+		String cookies = "forms9slides=" + COOKIE;
+		Log.d("Cookie", "jsTest()");
+		wv.loadUrl("javascript:(function(){"
+				+ "var expDate = new Date();"
+				+ "expDate.setDate(expDate.getDate() + 365);"
+				+ "expDate=expDate.toGMTString();"
+				+ "var cookStr='" + cookies + ";path=/;expires=" + "'" + "+expDate;"
+				+ "document.cookie=cookStr;"
+				+ "alert(document.cookie)"
+				+ "})()");  
 	}
 
 	@Override
@@ -177,49 +221,40 @@ public class MainActivity extends Activity {
 
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			view.loadUrl(url);
-			String addCookieJS = "javascript:addCookie(){" + "document.cookie=\"" + cookies + "\"};";
-			Log.d("Cookie", "shouldOverrideUrlLoading()");
-			Log.d("Cookie", addCookieJS);
-			view.loadUrl(addCookieJS);
+//			String cookies = "forms9slides=" + COOKIE;
+//			Log.d("Cookie", "jsTest()");
+//			view.loadUrl("javascript:(function(){"
+//					+ "var expDate = new Date();"
+//					+ "expDate.setDate(expDate.getDate() + 365);"
+//					+ "expDate=expDate.toGMTString();"
+//					+ "var cookStr='" + cookies + ";path=/;expires=" + "'" + "+expDate;"
+//					//+ "alert(cookStr)"
+//					+ "document.cookie=cookStr;"
+//					+ "})()");  
+//			view.loadUrl(url);
 			return false;
 		}
 
 		@Override
 		public void onLoadResource(WebView view, String url) {
 			// Log.d("Search", url);
-			super.onLoadResource(view, url);
+			//super.onLoadResource(view, url);
+//			setCook();
 		}
 
 		@Override
 		public void onPageStarted(WebView view, String url, Bitmap favicon) {
-			super.onPageStarted(view, url, favicon);
-			String addCookieJS = "javascript:addCookie(){" 
-					+ "var expDate = new Date();"
-					+ "expDate.setDate(expDate.getDate() + 365);"
-					+ "expDate = expDate.toGMTString();"
-					+ "document.cookie=\"" + cookies + "\";path=/;expires=expDate"
-					+ "};";
-
-			
-			Log.d("Cookie", "onPageStarted()");
-			Log.d("Cookie", addCookieJS);
-			view.loadUrl(addCookieJS);
+			//jsTest();
+//			super.onPageStarted(view, url, favicon);
+//			setCook();
 		}
 
 		@Override
 		public void onPageFinished(WebView view, String url) {
-			super.onPageFinished(view, url);
-//			String addCookieJS = "javascript:addCookie(){" + "document.cookie=\"" + cookies + "\"};";
-			String addCookieJS = "javascript:addCookie(){" 
-					+ "var expDate = new Date();"
-					+ "expDate.setDate(expDate.getDate() + 365);"
-					+ "expDate = expDate.toGMTString();"
-					+ "document.cookie=\"" + cookies + "\";path=/;expires=expDate"
-					+ "};";
-			Log.d("Cookie", "onPageFinished()");
-			Log.d("Cookie", addCookieJS);
-			view.loadUrl(addCookieJS);
+			//super.onPageFinished(view, url);
+			setCook();
+//			jsTest();
+//			removeCook();
 		}
 	}
 

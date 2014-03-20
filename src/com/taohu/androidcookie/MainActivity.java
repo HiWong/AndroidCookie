@@ -47,7 +47,7 @@ public class MainActivity extends Activity {
 		wv = (WebView) findViewById(R.id.wv_webtab);
 
 		url = "http://9slides.com/";
-		DebugCookie type = DebugCookie.AddJS;
+		DebugCookie type = DebugCookie.AddHeader;
 		CookieManager.setAcceptFileSchemeCookies(true);
 
 		if (type == DebugCookie.LoadData) {
@@ -99,18 +99,26 @@ public class MainActivity extends Activity {
 		wv.loadUrl(removeCookieJS);
 	}
 	
-	private void setCook(){
+	private void setCook(WebView wv){
 		String cookies = "forms9slides=" + COOKIE;
 		String addCookieJS = "javascript:(function(){ " 
 				+ "var expDate = new Date();"
 				+ "expDate.setDate(expDate.getDate() + 365);"
 				+ "expDate=expDate.toGMTString();"
-				+ "var cookieStr='" + cookies + ";path=/;expires=" + "'" + "+expDate;"
+				//+ "var cookieStr='" + cookies + ";path=/;expires=" + "'" + "+expDate;"
+				//+ "var cookieStr='" + cookies + ";expires=" + "'" + "+expDate;"
+				+ "var cookieStr='" + cookies + "';"
 				+ "document.cookie=cookieStr;"
 				+ "alert(document.cookie)"
 				+ "})()";
 		Log.d("Cookie", addCookieJS);
 		wv.loadUrl(addCookieJS);
+	}
+	
+	private void showCookie(WebView wv){
+		wv.loadUrl("javascript:(function(){"
+				+ "alert(document.cookie)"
+				+ "})()");  
 	}
 	
 	private void jsTest(){
@@ -231,7 +239,8 @@ public class MainActivity extends Activity {
 //					//+ "alert(cookStr)"
 //					+ "document.cookie=cookStr;"
 //					+ "})()");  
-//			view.loadUrl(url);
+			view.loadUrl(url);
+			setCook(view);
 			return false;
 		}
 
@@ -245,21 +254,25 @@ public class MainActivity extends Activity {
 		@Override
 		public void onPageStarted(WebView view, String url, Bitmap favicon) {
 			//jsTest();
-//			super.onPageStarted(view, url, favicon);
-//			setCook();
+			super.onPageStarted(view, url, favicon);
+			setCook(view);
 		}
 
 		@Override
 		public void onPageFinished(WebView view, String url) {
-			//super.onPageFinished(view, url);
-			setCook();
+			super.onPageFinished(view, url);
+			setCook(view);
 //			jsTest();
 //			removeCook();
 		}
 	}
 
 	public class WebTabClient extends WebViewClient {
-
+		@Override
+		public void onPageFinished(WebView view, String url) {
+			super.onPageFinished(view, url);
+			showCookie(view);
+		}
 	}
 
 	public class WebTabChromeClient extends WebChromeClient {
